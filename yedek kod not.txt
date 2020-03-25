@@ -1,0 +1,126 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+//System.Data.OleDb Kütüphanesini ekliyorum
+using System.Data.OleDb;
+
+namespace Personel_Takip
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+
+        //Veritabanýnýn dosya yolu ile provider nesnesini belirledim:
+        OleDbConnection baglantim = new OleDbConnection("Provider=Microsoft.Ace.OleDb.12.0;Data Source=Personel.accdb");//dosya veriyolu
+                                                                                                                        //deðiþkenleri tanýmlýyorum (heme yerel hem formlar arasý deðiþkenler)
+
+        //formlar arasý aktarýmda kullandýðým deðiþkenler:
+        public static string tcno, adi, soyadi, yetki;
+
+        //yerel deðiþkenler-yalnýzca bu formda geçerli
+        int hak = 3; bool durum = false; //kullanýcý eþleþtirmesinde true-false
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if (hak!=0) //hak varsa
+            {
+                baglantim.Open();//veritabanýný açýyorum
+                OleDbCommand selectsorgu = new OleDbCommand("select * from kullanicilar", baglantim);//command sorgu oluþturup,baglantim nesnesi ile iliþkilendiriyorum
+               
+                //veri okuyucu tanýmlama:
+                OleDbDataReader kayitokuma = selectsorgu.ExecuteReader();//select sorgu sonuçlarýný (*) hepsini getiriyor,saklýyor
+
+                while(kayitokuma.Read())//okuttuðumda tabloda bilgi varsa true deðeri döner,while çalýþýr
+                {
+                    if (radioButton1.Checked==true)//yönetici giriþi için
+                    {
+                        //bu durumda girilen yetki,kul.adý ve þifre, veritabaný ile uyuþuyor mu bakýyorum
+                        if (kayitokuma["kullaniciadi"].ToString()==textBox1.Text&&kayitokuma["parola"].ToString()==textBox2.Text
+                            &&kayitokuma["yetki"].ToString()=="Yönetici")
+                        {
+                            durum = true;                            //baþarýlý ise giriþ durumu true
+                            tcno = kayitokuma.GetValue(0).ToString();//kaydýn tcno(tabloda sýfýrýncý alaný) verisini almaya yarýyor
+                            adi = kayitokuma.GetValue(1).ToString();
+                            soyadi = kayitokuma.GetValue(2).ToString();
+                            yetki = kayitokuma.GetValue(3).ToString();
+                                                                     //bu bilgiler baþka formda kullanýlmak üzere aktarýlacak
+                            this.Hide();                             //giriþ baþarýlý olduðunda bu formu gizle
+                            Form2 frm2 = new Form2();                //form2 nesnesi oluþturdum
+                            frm2.Show();                             //form2 yi açýyorum
+                            break;                                   //while döngüsü loopa girmesin diye sonlandýrdým
+                        }
+                       
+                    }
+                    if (radioButton2.Checked == true)//kullanýcý giriþi için
+                    {
+                        //bu durumda girilen yetki,kul.adý ve þifre, veritabaný ile uyuþuyor mu bakýyorum
+                        if (kayitokuma["kullaniciadi"].ToString() == textBox1.Text && kayitokuma["parola"].ToString() == textBox2.Text
+                            && kayitokuma["yetki"].ToString() == "Kullanýcý")
+                        {
+                            durum = true;                            //baþarýlý ise giriþ durumu true
+                            tcno = kayitokuma.GetValue(0).ToString();//kaydýn tcno(tabloda sýfýrýncý alaný) verisini almaya yarýyor
+                            adi = kayitokuma.GetValue(1).ToString();
+                            soyadi = kayitokuma.GetValue(2).ToString();
+                            yetki = kayitokuma.GetValue(3).ToString();
+                            //bu bilgiler baþka formda kullanýlmak üzere aktarýlacak
+                            this.Hide();                             //giriþ baþarýlý olduðunda bu formu gizle
+                            Form3 frm3 = new Form3();                //form3 nesnesi oluþturdum
+                            frm3.Show();                             //form3 yi açýyorum
+                            break;                                   //while döngüsü loopa girmesin diye sonlandýrdým
+                        }
+
+                    }
+                }
+
+                if (durum==false) //kullanýcý adý veya þifre eþleþmesi yoksa hakký azaltýyorum
+
+                {
+                    hak--;
+                    baglantim.Close(); //baðlantýyý kapatýyorum
+
+                }
+
+            }
+            label5.Text = Convert.ToString(hak); //hak sýfýrlanýnca mesaj gösterip programý kapatýyorum
+            if (hak==0)
+            {
+                button1.Enabled = false;         //hak kalmayýnca giriþ butonunu iptal ettim
+                MessageBox.Show("Giriþ Hakký Kalmadý");
+                this.Close();
+            }
+            
+
+        }
+
+        private void radioButton1_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label3_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            this.Text = "Kullanýcý Giriþi"; //formun baþlýk text'i
+            this.AcceptButton = button1;//enter tuþuna bastýðýmda giriþ butonuna basacak
+            this.CancelButton = button2;//escape tuþu çýkýþ butonu iþlevinde
+            label5.Text = Convert.ToString(hak);//kalan hakký string biçiminde yazacak
+            radioButton1.Checked = true;//radiobutton1 default seçili
+            this.StartPosition = FormStartPosition.CenterScreen;//form ekranýn ortasýnda çýksýn
+            this.FormBorderStyle = FormBorderStyle.FixedToolWindow;//formun üst iþaretlerini görünmez kýldým
+        }
+    }
+}
